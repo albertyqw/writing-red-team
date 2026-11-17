@@ -6,7 +6,12 @@ import { runPersona } from "./passes/panel.js";
 import type { Llm, RunResult } from "./types.js";
 
 /** Level 1: blind persona panel on the whole piece, then one adjudication. */
-export async function runLevel1(llm: Llm, articleDir: string, harnessDir: string): Promise<RunResult> {
+export async function runLevel1(
+  llm: Llm,
+  articleDir: string,
+  harnessDir: string,
+  progress: (line: string) => void = () => {},
+): Promise<RunResult> {
   const cfg = await loadConfig(harnessDir);
   const brief = parseBrief(await loadText(path.join(articleDir, "brief.md")));
   const version = await latestVersion(articleDir);
@@ -16,8 +21,23 @@ export async function runLevel1(llm: Llm, articleDir: string, harnessDir: string
   ];
   const profile = await loadText(path.join(harnessDir, "profile.md"));
 
+  const words = version.text.split(/\s+/).filter(Boolean).length;
+  progress(`Snapshot ${version.name}, ${words} words. ${personas.length} readers: ${personas.map((p) => p.id).join(", ")}.`);
+
   // Separate calls keep the readers blind to each other.
-  const reports = await Promise.all(personas.map((p) => runPersona(llm, cfg, p, brief, version.text)));
+  let done = 0;
+  const reports = await Promise.all(
+    personas.map(async (p) => {
+      try {
+        const r = await runPersona(llm, cfg, p, brief, version.text);
+        progress(`  ${++done}/${personas.length} ${p.id}: ${r.report.findings.length} finding(s)`);
+        return r;
+      } catch (err) {
+        throw new Error(`Reader "${p.id}" failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }),
+  );
+  progress("Adjudicating...");
   const { adjudication, usage } = await adjudicate(
     llm,
     cfg,

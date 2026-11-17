@@ -26,7 +26,8 @@ async function main(): Promise<void> {
     const name = await saveSnapshot(articleDir(slug), resolveUserPath(file));
     console.log(`Saved snapshot ${name}.`);
   } else if (cmd === "run") {
-    const result = await runLevel1(anthropicLlm(), articleDir(slug), harnessDir);
+    console.error(`Running level 1 on ${slug}. This takes up to a minute.`);
+    const result = await runLevel1(anthropicLlm(), articleDir(slug), harnessDir, (line) => console.error(line));
     console.log(renderReport(result));
   } else {
     throw new Error(USAGE);

@@ -9,7 +9,8 @@ export function anthropicLlm(apiKey = process.env.ANTHROPIC_API_KEY): Llm {
   if (!apiKey) {
     throw new Error("Set ANTHROPIC_API_KEY before running a pass.");
   }
-  const client = new Anthropic({ apiKey });
+  // Fail within two minutes instead of hanging on a stuck call.
+  const client = new Anthropic({ apiKey, timeout: 120_000, maxRetries: 1 });
 
   return async (call) => {
     const res = await client.messages.create({

@@ -56,7 +56,11 @@ function fakeLlm(calls: StructuredCall[]): Llm {
 test("level 1 runs one blind call per persona, then one adjudication", async () => {
   const { article, harness } = await fixture();
   const calls: StructuredCall[] = [];
-  const result = await runLevel1(fakeLlm(calls), article, harness);
+  const lines: string[] = [];
+  const result = await runLevel1(fakeLlm(calls), article, harness, (l) => lines.push(l));
+  assert.match(lines[0]!, /Snapshot 002.md, \d+ words. 5 readers/);
+  assert.equal(lines.filter((l) => /\d\/5 /.test(l)).length, 5);
+  assert.equal(lines.at(-1), "Adjudicating...");
 
   const personaCalls = calls.filter((c) => c.toolName === "report");
   assert.equal(personaCalls.length, 5, "four mode personas plus the principles editor");
@@ -125,4 +129,10 @@ test("paste resolves paths from where the user typed, and reads .docx", async ()
   assert.equal(await saveSnapshot(dir, path.join(dir, "d.txt")), "002.md");
   await writeFile(path.join(dir, "d.pdf"), "x");
   await assert.rejects(saveSnapshot(dir, path.join(dir, "d.pdf")), /Use .docx/);
+});
+
+test("a failing reader is named in the error", async () => {
+  const { article, harness } = await fixture();
+  const llm: Llm = async () => { throw new Error("404 model not found"); };
+  await assert.rejects(runLevel1(llm, article, harness), /Reader "\w[\w-]*" failed: 404 model not found/);
 });
