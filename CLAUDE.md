@@ -74,14 +74,18 @@ Required before any run: a `mode:` line (essay, research, application), a filled
 
 ## Build order
 
-1. Engine, brief, level 1 panel, principles editor. **Done.** Not yet run against the real API.
-2. Round screen with pasted snapshots and rulings (accept, reject with reason, defer; dispute rulings). Rulings append to `log.jsonl`.
-3. Level 2 and the definitions check.
-4. Persona builder and Notion links.
-5. Visuals with prompts and the shape files.
-6. Circling detection.
+`PLAN.md` holds the full build plan, with scope, acceptance checks, and questions for Albert per milestone. Work one milestone at a time and stop for a demo after each.
 
-Immediate next step: run level 1 on the dark matter essay with a real key, read the report with Albert, and tune the prompts before building step 2.
+- Engine, brief, level 1 panel, principles editor. **Done.** Not yet run against the real API.
+- A: a window with the Round screen, on fixtures
+- B: real runs from the app, then tune prompts with Albert
+- C: rulings and rounds
+- D: level 2, checks, and the table renderer
+- E: Ledgers
+- F: persona builder and Notion
+- G: visuals
+- H: circling detection
+- I: feedback and retro
 
 ## Planned features, decided but not built
 
