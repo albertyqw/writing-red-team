@@ -1,0 +1,6 @@
+{
+  "models": { "persona": "claude-haiku-5-5", "adjudicator": "claude-sonnet-5-5" },
+  "maxFindingsPerPersona": 3,
+  "maxFindings": 5,
+  "maxPersonaWords": 60
+}
