@@ -10,7 +10,7 @@ Status: step 1 of 6. The engine runs a level 1 pass from the command line. There
 npm install
 export ANTHROPIC_API_KEY=...
 npm run rt -- new my-essay           # then fill in articles/my-essay/brief.md
-npm run rt -- paste my-essay draft.md
+npm run rt -- paste my-essay ~/Documents/writing/draft.docx   # .docx, .md or .txt
 npm run rt -- run my-essay
 ```
 

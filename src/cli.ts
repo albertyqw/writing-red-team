@@ -1,8 +1,9 @@
-import { copyFile, cp, mkdir, readdir } from "node:fs/promises";
+import { cp } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { anthropicLlm } from "./llm.js";
 import { renderReport, runLevel1 } from "./run.js";
+import { resolveUserPath, saveSnapshot } from "./snapshot.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const harnessDir = path.join(root, "harness");
@@ -10,7 +11,7 @@ const articleDir = (slug: string) => path.join(root, "articles", slug);
 
 const USAGE = `Usage:
   rt new <slug>            create articles/<slug> with a brief to fill in
-  rt paste <slug> <file>   save a .md or .txt file as the next snapshot
+  rt paste <slug> <file>   save a .docx, .md or .txt file as the next snapshot
   rt run <slug>            run level 1 on the latest snapshot`;
 
 async function main(): Promise<void> {
@@ -22,11 +23,7 @@ async function main(): Promise<void> {
     console.log(`Created articles/${slug}. Fill in brief.md, then paste a draft.`);
   } else if (cmd === "paste") {
     if (!file) throw new Error(USAGE);
-    const dir = path.join(articleDir(slug), "versions");
-    await mkdir(dir, { recursive: true });
-    const n = (await readdir(dir)).filter((f) => /^\d{3}\./.test(f)).length + 1;
-    const name = `${String(n).padStart(3, "0")}${path.extname(file) || ".md"}`;
-    await copyFile(file, path.join(dir, name));
+    const name = await saveSnapshot(articleDir(slug), resolveUserPath(file));
     console.log(`Saved snapshot ${name}.`);
   } else if (cmd === "run") {
     const result = await runLevel1(anthropicLlm(), articleDir(slug), harnessDir);

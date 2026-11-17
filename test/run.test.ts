@@ -112,3 +112,17 @@ test("principles come from the brief, or from the mode by default", async () => 
   assert.match(p.text, /creative:/);
   await assert.rejects(loadPrinciplesPersona(path.resolve("harness"), ["poetic"]), /Unknown principles: poetic. Available:/);
 });
+
+test("paste resolves paths from where the user typed, and reads .docx", async () => {
+  const { resolveUserPath, saveSnapshot } = await import("../src/snapshot.js");
+  assert.equal(resolveUserPath("draft.md", "/Users/a/Documents"), "/Users/a/Documents/draft.md");
+  assert.equal(resolveUserPath("/tmp/x.md", "/Users/a"), "/tmp/x.md");
+
+  const dir = await mkdtemp(path.join(os.tmpdir(), "rt-paste-"));
+  await assert.rejects(saveSnapshot(dir, path.join(dir, "missing.md")), /No file at/);
+  await writeFile(path.join(dir, "d.txt"), "first");
+  assert.equal(await saveSnapshot(dir, path.join(dir, "d.txt")), "001.md");
+  assert.equal(await saveSnapshot(dir, path.join(dir, "d.txt")), "002.md");
+  await writeFile(path.join(dir, "d.pdf"), "x");
+  await assert.rejects(saveSnapshot(dir, path.join(dir, "d.pdf")), /Use .docx/);
+});
