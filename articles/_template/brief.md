@@ -1,4 +1,5 @@
 mode: essay
+principles: persuasive
 
 ## Audience
 [Who reads this, and how long they give it]

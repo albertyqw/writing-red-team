@@ -28,7 +28,42 @@ export function parseBrief(text: string): Brief {
       throw new Error(`brief.md needs a filled "## ${heading}" section.`);
     }
   }
-  return { mode: mode as Brief["mode"], text: text.trim() };
+  const listed = /^principles:\s*(.+)$/im.exec(text)?.[1];
+  const principles = listed
+    ? listed.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean)
+    : [DEFAULT_PRINCIPLES[mode as Brief["mode"]]];
+  return { mode: mode as Brief["mode"], principles, text: text.trim() };
+}
+
+const DEFAULT_PRINCIPLES: Record<Brief["mode"], string> = {
+  essay: "persuasive",
+  application: "persuasive",
+  research: "scientific",
+};
+
+/**
+ * The principles editor: one extra persona whose rules come from
+ * harness/principles/. Level 1 reads only each file's "Whole piece" list.
+ */
+export async function loadPrinciplesPersona(harnessDir: string, names: string[]): Promise<Persona> {
+  const dir = path.join(harnessDir, "principles");
+  const available = (await readdir(dir)).filter((f) => f.endsWith(".md") && f !== "README.md").map((f) => f.slice(0, -3));
+  const sets = ["base", ...names.filter((n) => n !== "base")];
+  const unknown = sets.filter((n) => !available.includes(n));
+  if (unknown.length) {
+    throw new Error(`Unknown principles: ${unknown.join(", ")}. Available: ${available.join(", ")}.`);
+  }
+  const rules = await Promise.all(
+    sets.map(async (n) => {
+      const body = section(await loadText(path.join(dir, `${n}.md`)), "Whole piece");
+      if (!body) throw new Error(`principles/${n}.md needs a "## Whole piece" section.`);
+      return `${n}:\n${body}`;
+    }),
+  );
+  return {
+    id: "principles",
+    text: `An editor who checks the draft against the author's own writing principles, listed below. Flag only clear breaches that hurt the goal in the brief. Name the principle in each finding.\n\n${rules.join("\n\n")}`,
+  };
 }
 
 function section(text: string, heading: string): string | undefined {

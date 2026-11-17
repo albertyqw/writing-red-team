@@ -56,6 +56,8 @@ export interface Config {
 
 export interface Brief {
   mode: "essay" | "research" | "application";
+  /** Principle sets beyond base, from a "principles:" line or the mode's default. */
+  principles: string[];
   text: string;
 }
 

@@ -20,15 +20,25 @@ A run writes the full result to `articles/<slug>/runs/` and appends one line to 
 
 ```
 articles/<slug>/   brief.md  versions/  runs/  log.jsonl
-harness/           config.json  profile.md  beliefs.md  personas/  checks/  shapes/
+harness/           config.json  profile.md  beliefs.md  personas/  principles/  checks/  shapes/
 src/               one primitive: a pass is a prompt plus an output schema
 ```
 
 ## Level 1
 
-1. Each persona for the brief's mode reads the brief and the draft in its own call, blind to the others.
+1. Each persona for the brief's mode reads the brief and the draft in its own call, blind to the others. A principles editor joins them and checks the draft against your writing principles.
 2. Code drops any finding whose quote is not in the draft.
 3. One adjudicator call merges findings, files disagreements as disputes, and drops style-only complaints.
+
+## Principles
+
+`harness/principles/` holds one file per writing context: base, persuasive, scientific, journalistic, creative. `base` always applies. Pick others in the brief:
+
+```
+principles: persuasive, scientific
+```
+
+With no line, essays and applications use `persuasive` and research uses `scientific`. Each file has a `## Whole piece` list for level 1 and a `## Prose` list for level 2. Add a context by adding a file.
 
 ## Cost controls
 

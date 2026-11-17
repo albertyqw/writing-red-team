@@ -1,6 +1,6 @@
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { latestVersion, loadConfig, loadPersonas, loadText, parseBrief } from "./harness.js";
+import { latestVersion, loadConfig, loadPersonas, loadPrinciplesPersona, loadText, parseBrief } from "./harness.js";
 import { adjudicate } from "./passes/adjudicate.js";
 import { runPersona } from "./passes/panel.js";
 import type { Llm, RunResult } from "./types.js";
@@ -10,7 +10,10 @@ export async function runLevel1(llm: Llm, articleDir: string, harnessDir: string
   const cfg = await loadConfig(harnessDir);
   const brief = parseBrief(await loadText(path.join(articleDir, "brief.md")));
   const version = await latestVersion(articleDir);
-  const personas = await loadPersonas(harnessDir, brief.mode, cfg.maxPersonaWords);
+  const personas = [
+    ...(await loadPersonas(harnessDir, brief.mode, cfg.maxPersonaWords)),
+    await loadPrinciplesPersona(harnessDir, brief.principles),
+  ];
   const profile = await loadText(path.join(harnessDir, "profile.md"));
 
   // Separate calls keep the readers blind to each other.

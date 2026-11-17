@@ -3,7 +3,7 @@ import { cp, mkdtemp, readFile, readdir, writeFile, mkdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { parseBrief } from "../src/harness.js";
+import { loadPrinciplesPersona, parseBrief } from "../src/harness.js";
 import { isAnchored } from "../src/passes/panel.js";
 import { renderReport, runLevel1 } from "../src/run.js";
 import type { Llm, StructuredCall } from "../src/types.js";
@@ -59,7 +59,11 @@ test("level 1 runs one blind call per persona, then one adjudication", async () 
   const result = await runLevel1(fakeLlm(calls), article, harness);
 
   const personaCalls = calls.filter((c) => c.toolName === "report");
-  assert.equal(personaCalls.length, 4);
+  assert.equal(personaCalls.length, 5, "four mode personas plus the principles editor");
+  const editor = personaCalls.find((c) => c.system.includes("writing principles"))!;
+  assert.match(editor.system, /persuasive:/);
+  assert.match(editor.system, /The claim or ask comes first/);
+  assert.doesNotMatch(editor.system, /Orwell/, "level 1 skips the prose lists");
   assert.equal(calls.filter((c) => c.toolName === "adjudicate").length, 1);
   for (const c of personaCalls) {
     assert.ok(c.user.includes(DRAFT), "persona reads the latest snapshot");
@@ -74,7 +78,7 @@ test("level 1 runs one blind call per persona, then one adjudication", async () 
   assert.equal(result.personas[0]!.report.findings.length, 1);
   assert.equal(result.personas[0]!.unanchored.length, 1);
   assert.equal(result.adjudication.findings[0]!.severity, "blocker", "blockers sort first");
-  assert.deepEqual(result.usage, { input: 700, output: 140 });
+  assert.deepEqual(result.usage, { input: 800, output: 160 });
 
   assert.equal((await readdir(path.join(article, "runs"))).length, 1);
   const log = (await readFile(path.join(article, "log.jsonl"), "utf8")).trim().split("\n");
@@ -96,4 +100,15 @@ test("quotes anchor across case, whitespace and curly quotes", () => {
   assert.ok(isAnchored("The platform’s host looks  elsewhere.", "the platform's host looks elsewhere"));
   assert.ok(!isAnchored(DRAFT, "markets always clear"));
   assert.ok(!isAnchored(DRAFT, "Science"), "too short to anchor");
+});
+
+test("principles come from the brief, or from the mode by default", async () => {
+  assert.deepEqual(parseBrief(BRIEF).principles, ["persuasive"]);
+  assert.deepEqual(parseBrief(BRIEF.replace("mode: essay", "mode: research")).principles, ["scientific"]);
+  assert.deepEqual(parseBrief(BRIEF.replace("mode: essay", "mode: essay\nprinciples: Scientific, journalistic")).principles, ["scientific", "journalistic"]);
+
+  const p = await loadPrinciplesPersona(path.resolve("harness"), ["creative"]);
+  assert.match(p.text, /base:/);
+  assert.match(p.text, /creative:/);
+  await assert.rejects(loadPrinciplesPersona(path.resolve("harness"), ["poetic"]), /Unknown principles: poetic. Available:/);
 });
